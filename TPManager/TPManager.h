@@ -26,7 +26,7 @@ class TPManager: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::
 	virtual void onLoad();
 	virtual void onUnload();
 
-	std::vector<positionInfo> getLocations();
+	std::vector<positionInfo> getPositionInfo();
 	void setPositionInfo(positionInfo info);
 
 	//// Inherited via PluginSettingsWindow

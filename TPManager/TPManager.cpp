@@ -51,7 +51,7 @@ void TPManager::onUnload()
 {
 }
 
-std::vector<positionInfo> TPManager::getLocations()
+std::vector<positionInfo> TPManager::getPositionInfo()
 {
 	ServerWrapper gameState = gameWrapper.get()->GetCurrentGameState();
 
