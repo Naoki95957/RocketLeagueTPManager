@@ -7,7 +7,11 @@
 #include "version.h"
 constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH) "." stringify(VERSION_BUILD);
 
-BAKKESMOD_PLUGIN(TPManager, "TPManager", plugin_version, PLUGINTYPE_FREEPLAY)
+const unsigned short UPDATE_ALL = 0;
+const unsigned short UPDATE_POSITION = 1;
+const unsigned short UPDATE_ROTATION = 2;
+const unsigned short UPDATE_VELOCITY = 3;
+const unsigned short UPDATE_ANGULAR_VELOCITY = 4;
 
 struct positionInfo
 {
@@ -27,7 +31,7 @@ class TPManager: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::
 	virtual void onUnload();
 
 	std::vector<positionInfo> getPositionInfo();
-	void setPositionInfo(positionInfo info);
+	void setPositionInfo(positionInfo info, unsigned short updateField = UPDATE_ALL);
 
 	//// Inherited via PluginSettingsWindow
 	//void RenderSettings() override;

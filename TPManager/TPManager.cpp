@@ -1,7 +1,6 @@
 #include "pch.h"
 #include "TPManager.h"
 
-
 BAKKESMOD_PLUGIN(TPManager, "This plugin provides a basic GUI for teleporting players", plugin_version, PLUGINTYPE_FREEPLAY)
 
 std::shared_ptr<CVarManagerWrapper> _globalCvarManager;
@@ -93,16 +92,35 @@ std::vector<positionInfo> TPManager::getPositionInfo()
 	return allEntities;
 }
 
-void TPManager::setPositionInfo(positionInfo info)
+void TPManager::setPositionInfo(positionInfo info, unsigned short updateField)
 {
 	ServerWrapper gameState = gameWrapper.get()->GetCurrentGameState();
 
 	if (info.name == "Ball") {
 		BallWrapper ballW = gameState.GetBall();
-		ballW.SetLocation(info.location);
-		ballW.SetRotation(info.rotation);
-		ballW.SetVelocity(info.velocity);
-		ballW.SetAngularVelocity(info.angVelocity, false);
+		switch (updateField)
+		{
+		case UPDATE_ALL:
+			ballW.SetLocation(info.location);
+			ballW.SetRotation(info.rotation);
+			ballW.SetVelocity(info.velocity);
+			ballW.SetAngularVelocity(info.velocity, false);
+			break;
+		case UPDATE_POSITION:
+			ballW.SetLocation(info.location);
+			break;
+		case UPDATE_ROTATION:
+			ballW.SetRotation(info.rotation);
+			break;
+		case UPDATE_VELOCITY:
+			ballW.SetVelocity(info.velocity);
+			break;
+		case UPDATE_ANGULAR_VELOCITY:
+			ballW.SetAngularVelocity(info.velocity, false);
+			break;
+		default:
+			break;
+		}
 	}
 	else
 	{
@@ -110,10 +128,29 @@ void TPManager::setPositionInfo(positionInfo info)
 			if (car.GetOwnerName() != info.name)
 				continue;
 			
-			car.SetLocation(info.location);
-			car.SetRotation(info.rotation);
-			car.SetVelocity(info.velocity);
-			car.SetAngularVelocity(info.velocity, false);
+			switch (updateField)
+			{
+			case UPDATE_ALL:
+				car.SetLocation(info.location);
+				car.SetRotation(info.rotation);
+				car.SetVelocity(info.velocity);
+				car.SetAngularVelocity(info.velocity, false);
+				break;
+			case UPDATE_POSITION:
+				car.SetLocation(info.location);
+				break;
+			case UPDATE_ROTATION:
+				car.SetRotation(info.rotation);
+				break;
+			case UPDATE_VELOCITY:
+				car.SetVelocity(info.velocity);
+				break;
+			case UPDATE_ANGULAR_VELOCITY:
+				car.SetAngularVelocity(info.velocity, false);
+				break;
+			default:
+				break;
+			}
 		}
 	}
 }
