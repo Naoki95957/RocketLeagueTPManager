@@ -36,15 +36,16 @@ void TPManager::Render()
 
 void TPManager::RenderInfo() 
 {
-	ImGui::TextUnformatted("This is a GUI to look at and control postions and movements in game. Simply cuz I was tired of typing \"Player location x y z\" over and over");
+	ImGui::TextUnformatted("This is a GUI to look at and control postions and movements in game. All cuz I was tired of typing \"Player location x y z\" over and over");
+	ImGui::Separator();
+	
 	//render/modify stuff
 	std::vector<positionInfo> info = getPositionInfo();
 	char input[1024];
 	if (info.size())
 	{
-		if (ImGui::TreeNode("Ball/s"))
+		if (ImGui::CollapsingHeader("Ball/s"))
 		{
-			ImGui::Separator();
 			ImGui::Indent(20);
 			for (int i = 0; i < numBalls; ++i)
 			{
@@ -71,14 +72,12 @@ void TPManager::RenderInfo()
 					pollingMutex.unlock();
 					ImGui::TreePop();
 				}
-				ImGui::Separator();
 			}
-			ImGui::TreePop();
+			ImGui::Unindent();
 		}
 		ImGui::Separator();
-		if (ImGui::TreeNode("Player/s")) 
+		if (ImGui::CollapsingHeader("Player/s")) 
 		{
-			ImGui::Separator();
 			ImGui::Indent(20);
 			for (int i = numBalls; i < info.size(); ++i)
 			{
@@ -104,9 +103,8 @@ void TPManager::RenderInfo()
 					pollingMutex.unlock();
 					ImGui::TreePop();
 				}
-				ImGui::Separator();
 			}
-			ImGui::TreePop();
+			ImGui::Unindent();
 		}
 	}
 	else
