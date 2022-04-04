@@ -12,6 +12,8 @@ std::string TPManager::GetPluginName() {
 void TPManager::RenderSettings() {
 	//ImGui::TextUnformatted("TPManager plugin settings");
 	RenderInfo();
+	ImGui::PushItemWidth(250.0f);
+	ImGui::SliderInt("Polling time (ms)", &pollingRateMiliseconds, 50, 5000);
 }
 
 // Do ImGui rendering here
@@ -24,7 +26,8 @@ void TPManager::Render()
 		return;
 	}
 	RenderInfo();
-
+	ImGui::PushItemWidth(250.0f);
+	ImGui::SliderInt("Polling time (ms)", &pollingRateMiliseconds, 50, 5000);
 	ImGui::End();
 
 	if (!isWindowOpen_)
@@ -40,18 +43,39 @@ void TPManager::RenderInfo()
 	std::vector<positionInfo> info = getPositionInfo();
 	if (info.size())
 	{
-		for (short i = 0; i < info.size(); ++i)
+		if (ImGui::TreeNode("Ball/s"))
 		{
-			if (ImGui::TreeNode(info[i].name.c_str()))
+			for (int i = 0; i < numBalls; ++i)
 			{
-				pollingMutex.lock();
-				RenderLocation(info[i]);
-				RenderRotation(info[i]);
-				RenderVelocity(info[i]);
-				RenderAngularVelocity(info[i]);
-				pollingMutex.unlock();
-				ImGui::TreePop();
+				if (ImGui::TreeNode(info[i].name.c_str()))
+				{
+					pollingMutex.lock();
+					RenderLocation(info[i]);
+					RenderVelocity(info[i]);
+					RenderAngularVelocity(info[i]);
+					RenderRotation(info[i]);
+					pollingMutex.unlock();
+					ImGui::TreePop();
+				}
 			}
+			ImGui::TreePop();
+		}
+		if (ImGui::TreeNode("Player/s")) 
+		{
+			for (int i = numBalls; i < info.size(); ++i)
+			{
+				if (ImGui::TreeNode(info[i].name.c_str()))
+				{
+					pollingMutex.lock();
+					RenderLocation(info[i]);
+					RenderVelocity(info[i]);
+					RenderAngularVelocity(info[i]);
+					RenderRotation(info[i]);
+					pollingMutex.unlock();
+					ImGui::TreePop();
+				}
+			}
+			ImGui::TreePop();
 		}
 	}
 	else
@@ -62,84 +86,156 @@ void TPManager::RenderInfo()
 
 void TPManager::RenderLocation(positionInfo entity)
 {
-	if (ImGui::TreeNode("Location"))
+	ImGui::TextUnformatted("Location");
+	ImGui::PushItemWidth(150.0f);
+	ImGui::BeginGroup();
+	ImGui::Text("X");
+	ImGui::SameLine();
+	ImGui::PushID(("Location_x" + std::to_string((uintptr_t) &entity)).c_str());
+	if (ImGui::DragFloat("", &(entity.location.X)), 5.0 && ImGui::IsItemActive() && ImGui::IsItemEdited())
 	{
-		if (ImGui::DragFloat("X", &(entity.location.X)), 5.0 && ImGui::IsItemActive() && ImGui::IsItemEdited())
-		{
-			setPositionInfo(entity, updatePositionType::UPDATE_POSITION);
-		}
-		if (ImGui::DragFloat("Y", &(entity.location.Y)), 5.0 && ImGui::IsItemActive() && ImGui::IsItemEdited())
-		{
-			setPositionInfo(entity, updatePositionType::UPDATE_POSITION);
-		}
-		if (ImGui::DragFloat("Z", &(entity.location.Z)), 5.0 && ImGui::IsItemActive() && ImGui::IsItemEdited())
-		{
-			setPositionInfo(entity, updatePositionType::UPDATE_POSITION);
-		}
-
-		int selection = 0;
-		ImGui::TreePop();
+		setPositionInfo(entity, updatePositionType::UPDATE_POSITION);
 	}
+	ImGui::PopID();
+	ImGui::EndGroup();
+	ImGui::SameLine();
+	ImGui::BeginGroup();
+	ImGui::Text("Y");
+	ImGui::SameLine();
+	ImGui::PushID(("Location_y" + std::to_string((uintptr_t)&entity)).c_str());
+	if (ImGui::DragFloat("", &(entity.location.Y)), 5.0 && ImGui::IsItemActive() && ImGui::IsItemEdited())
+	{
+		setPositionInfo(entity, updatePositionType::UPDATE_POSITION);
+	}
+	ImGui::PopID();
+	ImGui::EndGroup();
+	ImGui::SameLine();
+	ImGui::BeginGroup();
+	ImGui::Text("Z");
+	ImGui::SameLine();
+	ImGui::PushID(("Location_z" + std::to_string((uintptr_t)&entity)).c_str());
+	if (ImGui::DragFloat("", &(entity.location.Z)), 5.0 && ImGui::IsItemActive() && ImGui::IsItemEdited())
+	{
+		setPositionInfo(entity, updatePositionType::UPDATE_POSITION);
+	}
+	ImGui::PopID();
+	ImGui::EndGroup();
 }
 
 void TPManager::RenderRotation(positionInfo entity)
 {
-	if (ImGui::TreeNode("Rotation"))
+	ImGui::TextUnformatted("Rotation");
+	ImGui::PushItemWidth(150.0f);
+	ImGui::BeginGroup();
+	ImGui::Text("Yaw");
+	ImGui::SameLine();
+	ImGui::PushID(("Rotation_yaw" + std::to_string((uintptr_t)&entity)).c_str());
+	if (ImGui::DragInt("", &(entity.rotation.Yaw)) && ImGui::IsItemActive() && ImGui::IsItemEdited())
 	{
-		if (ImGui::DragInt("Yaw", &(entity.rotation.Yaw)) && ImGui::IsItemActive() && ImGui::IsItemEdited())
-		{
-			setPositionInfo(entity, updatePositionType::UPDATE_ROTATION);
-		}
-		if (ImGui::DragInt("Pitch", &(entity.rotation.Pitch)) && ImGui::IsItemActive() && ImGui::IsItemEdited())
-		{
-			setPositionInfo(entity, updatePositionType::UPDATE_ROTATION);
-		}
-		if (ImGui::DragInt("Roll", &(entity.rotation.Roll)) && ImGui::IsItemActive() && ImGui::IsItemEdited())
-		{
-			setPositionInfo(entity, updatePositionType::UPDATE_ROTATION);
-		}
-		ImGui::TreePop();
+		setPositionInfo(entity, updatePositionType::UPDATE_ROTATION);
 	}
+	ImGui::PopID();
+	ImGui::EndGroup();
+	ImGui::SameLine();
+	ImGui::BeginGroup();
+	ImGui::Text("Pitch");
+	ImGui::SameLine();
+	ImGui::PushID(("Rotation_pitch" + std::to_string((uintptr_t)&entity)).c_str());
+	if (ImGui::DragInt("", &(entity.rotation.Pitch)) && ImGui::IsItemActive() && ImGui::IsItemEdited())
+	{
+		setPositionInfo(entity, updatePositionType::UPDATE_ROTATION);
+	}
+	ImGui::PopID();
+	ImGui::EndGroup();
+	ImGui::SameLine();
+	ImGui::BeginGroup();
+	ImGui::Text("Roll");
+	ImGui::SameLine();
+	ImGui::PushID(("Rotation_roll" + std::to_string((uintptr_t)&entity)).c_str());
+	if (ImGui::DragInt("", &(entity.rotation.Roll)) && ImGui::IsItemActive() && ImGui::IsItemEdited())
+	{
+		setPositionInfo(entity, updatePositionType::UPDATE_ROTATION);
+	}
+	ImGui::PopID();
+	ImGui::EndGroup();
 }
 
 void TPManager::RenderVelocity(positionInfo entity)
 {
-	if (ImGui::TreeNode("Velocity"))
+	ImGui::TextUnformatted("Velocity"); 
+	ImGui::PushItemWidth(150.0f);
+	ImGui::BeginGroup();
+	ImGui::Text("X");
+	ImGui::SameLine();
+	ImGui::PushID(("Velocity_x" + std::to_string((uintptr_t)&entity)).c_str());
+	if (ImGui::DragFloat("", &(entity.velocity.X)) && ImGui::IsItemActive() && ImGui::IsItemEdited())
 	{
-		if (ImGui::DragFloat("X", &(entity.velocity.X)) && ImGui::IsItemActive() && ImGui::IsItemEdited())
-		{
-			setPositionInfo(entity, updatePositionType::UPDATE_VELOCITY);
-		}
-		if (ImGui::DragFloat("Y", &(entity.velocity.Y)) && ImGui::IsItemActive() && ImGui::IsItemEdited())
-		{
-			setPositionInfo(entity, updatePositionType::UPDATE_VELOCITY);
-		}
-		if (ImGui::DragFloat("Z", &(entity.velocity.Z)) && ImGui::IsItemActive() && ImGui::IsItemEdited())
-		{
-			setPositionInfo(entity, updatePositionType::UPDATE_VELOCITY);
-		}
-		ImGui::TreePop();
+		setPositionInfo(entity, updatePositionType::UPDATE_VELOCITY);
 	}
+	ImGui::PopID();
+	ImGui::EndGroup();
+	ImGui::SameLine();
+	ImGui::BeginGroup();
+	ImGui::Text("Y");
+	ImGui::SameLine();
+	ImGui::PushID(("Velocity_y" + std::to_string((uintptr_t)&entity)).c_str());
+	ImGui::SameLine();
+	if (ImGui::DragFloat("", &(entity.velocity.Y)) && ImGui::IsItemActive() && ImGui::IsItemEdited())
+	{
+		setPositionInfo(entity, updatePositionType::UPDATE_VELOCITY);
+	}
+	ImGui::PopID();
+	ImGui::EndGroup();
+	ImGui::SameLine();
+	ImGui::BeginGroup();
+	ImGui::Text("Z");
+	ImGui::SameLine();
+	ImGui::PushID(("Velocity_z" + std::to_string((uintptr_t)&entity)).c_str());
+	ImGui::SameLine();
+	if (ImGui::DragFloat("", &(entity.velocity.Z)) && ImGui::IsItemActive() && ImGui::IsItemEdited())
+	{
+		setPositionInfo(entity, updatePositionType::UPDATE_VELOCITY);
+	}
+	ImGui::PopID();
+	ImGui::EndGroup();
 }
 
 void TPManager::RenderAngularVelocity(positionInfo entity)
 {
-	if (ImGui::TreeNode("Angular Velocity"))
+	ImGui::TextUnformatted("Angular Velocity"); 
+	ImGui::PushItemWidth(150.0f);
+	ImGui::BeginGroup();
+	ImGui::Text("X");
+	ImGui::SameLine();
+	ImGui::PushID(("angVelocity_x" + std::to_string((uintptr_t)&entity)).c_str());
+	if (ImGui::DragFloat("", &(entity.angVelocity.X)) && ImGui::IsItemActive() && ImGui::IsItemEdited())
 	{
-		if (ImGui::DragFloat("X", &(entity.angVelocity.X)) && ImGui::IsItemActive() && ImGui::IsItemEdited())
-		{
-			setPositionInfo(entity, updatePositionType::UPDATE_ANGULAR_VELOCITY);
-		}
-		if (ImGui::DragFloat("Y", &(entity.angVelocity.Y)) && ImGui::IsItemActive() && ImGui::IsItemEdited())
-		{
-			setPositionInfo(entity, updatePositionType::UPDATE_ANGULAR_VELOCITY);
-		}
-		if (ImGui::DragFloat("Z", &(entity.angVelocity.Z)) && ImGui::IsItemActive() && ImGui::IsItemEdited())
-		{
-			setPositionInfo(entity, updatePositionType::UPDATE_ANGULAR_VELOCITY);
-		}
-		ImGui::TreePop();
+		setPositionInfo(entity, updatePositionType::UPDATE_ANGULAR_VELOCITY);
 	}
+	ImGui::PopID();
+	ImGui::EndGroup();
+	ImGui::SameLine();
+	ImGui::BeginGroup();
+	ImGui::Text("Y");
+	ImGui::SameLine();
+	ImGui::PushID(("angVelocity_y" + std::to_string((uintptr_t)&entity)).c_str());
+	if (ImGui::DragFloat("", &(entity.angVelocity.Y)) && ImGui::IsItemActive() && ImGui::IsItemEdited())
+	{
+		setPositionInfo(entity, updatePositionType::UPDATE_ANGULAR_VELOCITY);
+	}
+	ImGui::PopID();
+	ImGui::EndGroup();
+	ImGui::SameLine();
+	ImGui::BeginGroup();
+	ImGui::Text("Z");
+	ImGui::SameLine();
+	ImGui::PushID(("angVelocity_z" + std::to_string((uintptr_t)&entity)).c_str());
+	if (ImGui::DragFloat("", &(entity.angVelocity.Z)) && ImGui::IsItemActive() && ImGui::IsItemEdited())
+	{
+		setPositionInfo(entity, updatePositionType::UPDATE_ANGULAR_VELOCITY);
+	}
+	ImGui::PopID();
+	ImGui::EndGroup();
 }
 
 // Name of the menu that is used to toggle the window.

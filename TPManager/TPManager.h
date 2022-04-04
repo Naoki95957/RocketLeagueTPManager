@@ -17,6 +17,7 @@ enum class updatePositionType
 
 struct positionInfo
 {
+	ActorWrapper actor;
 	std::string name;
 	Vector location;
 	Rotator rotation;
@@ -33,6 +34,7 @@ private:
 	bool pollForInfo;
 	std::vector<positionInfo> positionalInfo;
 	std::vector<int> comboSelection = std::vector<int>();
+	int numBalls = 0;
 
 	void getContinousInfo();
 	std::vector<positionInfo> pollPositionInfo();
@@ -44,7 +46,7 @@ private:
 	void RenderAngularVelocity(positionInfo entity);
 
 public:
-	unsigned int pollingRateMiliseconds = 250;
+	int pollingRateMiliseconds = 250;
 	//std::shared_ptr<bool> enabled;
 
 	//Boilerplate

@@ -93,6 +93,10 @@ void TPManager::getContinousInfo()
 			positionalInfo = std::vector<positionInfo>();
 		}
 		pollingMutex.unlock();
+		if (pollingRateMiliseconds < 50)
+			pollingRateMiliseconds = 50;
+		if (pollingRateMiliseconds > 5000)
+			pollingRateMiliseconds = 5000;
 		std::this_thread::sleep_for(std::chrono::milliseconds(pollingRateMiliseconds));
 	}
 	finishedPolling.unlock();
@@ -112,22 +116,25 @@ std::vector<positionInfo> TPManager::pollPositionInfo()
 	//list containing all moving objects
 	std::vector<positionInfo> allEntities = std::vector<positionInfo>();
 
-	//TODO convert to array wrapper
-	//ball
-	if (gameState.GetBall()) 
-	{
-		allEntities.push_back({
-			"Ball",
-			gameState.GetBall().GetLocation(),
-			gameState.GetBall().GetRotation(),
-			gameState.GetBall().GetVelocity(),
-			gameState.GetBall().GetAngularVelocity()
-		});
+	// per ball
+	ArrayWrapper<BallWrapper> balls = gameState.GetGameBalls();
+	if (balls.Count() > 0) {
+		for (int i = 0; i < balls.Count(); ++i)
+		{
+			allEntities.push_back({
+			balls.Get(i),
+			"Ball " + std::to_string(i),
+			balls.Get(i).GetLocation(),
+			balls.Get(i).GetRotation(),
+			balls.Get(i).GetVelocity(),
+			balls.Get(i).GetAngularVelocity()
+				});
+		}
+		numBalls = balls.Count();
 	}
 	
 	// per car
 	ArrayWrapper cars = gameState.GetCars();
-
 	std::vector<CarWrapper> carVector = std::vector<CarWrapper>();
 	for (auto car : cars) {
 		carVector.push_back(car);
@@ -151,6 +158,7 @@ std::vector<positionInfo> TPManager::pollPositionInfo()
 				name = "Player " + std::to_string(i);
 			}
 			allEntities.push_back({
+				car,
 				name,
 				car.GetLocation(),
 				car.GetRotation(),
@@ -165,126 +173,170 @@ std::vector<positionInfo> TPManager::pollPositionInfo()
 void TPManager::setPositionInfo(positionInfo info, updatePositionType updateField)
 {
 	ServerWrapper gameState = gameWrapper.get()->GetCurrentGameState();
-	if (info.name == "Ball") {
-		BallWrapper ballW = gameState.GetBall();
-		switch (updateField)
-		{
+	switch (updateField)
+	{
 		case updatePositionType::UPDATE_ALL:
-		{
-			gameWrapper->Execute([=, ballW = ballW, info = info](GameWrapper*) {
-				ActorWrapper(ballW.memory_address).SetLocation(info.location);
-				ActorWrapper(ballW.memory_address).SetRotation(info.rotation);
-				ActorWrapper(ballW.memory_address).SetVelocity(info.velocity);
-				ActorWrapper(ballW.memory_address).SetAngularVelocity(info.angVelocity, false);
-				});
-		}
+			{
+				gameWrapper->Execute([=, info = info](GameWrapper*) {
+					ActorWrapper(info.actor.memory_address).SetLocation(info.location);
+					ActorWrapper(info.actor.memory_address).SetRotation(info.rotation);
+					ActorWrapper(info.actor.memory_address).SetVelocity(info.velocity);
+					ActorWrapper(info.actor.memory_address).SetAngularVelocity(info.angVelocity, false);
+					});
+			}
 			break;
 		case updatePositionType::UPDATE_POSITION:
-		{
-			gameWrapper->Execute([=, ballW = ballW, info = info](GameWrapper*){
-				ActorWrapper(ballW.memory_address).SetLocation(info.location);
-				});
-		}
+			{
+				gameWrapper->Execute([=, info = info](GameWrapper*) {
+					ActorWrapper(info.actor.memory_address).SetLocation(info.location);
+					});
+			}
 			break;
 		case updatePositionType::UPDATE_ROTATION:
-		{
-			gameWrapper->Execute([=, ballW = ballW, info = info](GameWrapper*) {
-				ActorWrapper(ballW.memory_address).SetRotation(info.rotation);
-				});
-		}
+			{
+				gameWrapper->Execute([=, info = info](GameWrapper*) {
+					ActorWrapper(info.actor.memory_address).SetRotation(info.rotation);
+					});
+			}
 			break;
 		case updatePositionType::UPDATE_VELOCITY:
-		{
-			gameWrapper->Execute([=, ballW = ballW, info = info](GameWrapper*) {
-				ActorWrapper(ballW.memory_address).SetVelocity(info.velocity);
-				});
-		}
+			{
+				gameWrapper->Execute([=, info = info](GameWrapper*) {
+					ActorWrapper(info.actor.memory_address).SetVelocity(info.velocity);
+					});
+			}
 			break;
 		case updatePositionType::UPDATE_ANGULAR_VELOCITY:
-		{
-			gameWrapper->Execute([=, ballW = ballW, info = info](GameWrapper*) {
-				ActorWrapper(ballW.memory_address).SetAngularVelocity(info.angVelocity, false);
-				});
-		}
+			{
+				gameWrapper->Execute([=, info = info](GameWrapper*) {
+					ActorWrapper(info.actor.memory_address).SetAngularVelocity(info.angVelocity, false);
+					});
+			}
 			break;
 		default:
 			break;
-		}
 	}
-	else
-	{	
-		auto carsInGame = gameState.GetCars();
-		for (int i = 0; i < carsInGame.Count(); ++i)
-		{
-			auto car = carsInGame.Get(i);
-			if (car.GetOwnerName() != info.name)
-			{
-				if (info.name.find("Player ") != std::string::npos)
-				{
-					try
-					{
-						int playerID = std::stoi(info.name.substr(7, info.name.size()));
-						if (playerID != i)
-						{
-							continue;
-						}
-						//success - sheesh
-					}
-					catch (const std::exception&)
-					{
-						continue;
-					}
-				}
-				else
-				{
-					continue;
 
-				}
-			}
-			
-			switch (updateField)
-			{
-			case updatePositionType::UPDATE_ALL:
-			{
-				gameWrapper->Execute([=, car = car, info = info](GameWrapper*) {
-					ActorWrapper(car.memory_address).SetLocation(info.location);
-					ActorWrapper(car.memory_address).SetRotation(info.rotation);
-					ActorWrapper(car.memory_address).SetVelocity(info.velocity);
-					ActorWrapper(car.memory_address).SetAngularVelocity(info.angVelocity, false);
-					});
-			}
-			break;
-			case updatePositionType::UPDATE_POSITION:
-			{
-				gameWrapper->Execute([=, car = car, info = info](GameWrapper*) {
-					ActorWrapper(car.memory_address).SetLocation(info.location);
-					});
-			}
-				break;
-			case updatePositionType::UPDATE_ROTATION:
-			{
-				gameWrapper->Execute([=, car = car, info = info](GameWrapper*) {
-					ActorWrapper(car.memory_address).SetRotation(info.rotation);
-					});
-			}
-				break;
-			case updatePositionType::UPDATE_VELOCITY:
-			{
-				gameWrapper->Execute([=, car = car, info = info](GameWrapper*) {
-					ActorWrapper(car.memory_address).SetVelocity(info.velocity);
-					});
-			}
-				break;
-			case updatePositionType::UPDATE_ANGULAR_VELOCITY:
-			{
-				gameWrapper->Execute([=, car = car, info = info](GameWrapper*) {
-					ActorWrapper(car.memory_address).SetAngularVelocity(info.angVelocity, false);
-				});
-			}
-				break;
-			default:
-				break;
-			}
-		}
-	}
+	//if (info.name == "Ball") {
+	//	BallWrapper ballW = gameState.GetBall();
+	//	switch (updateField)
+	//	{
+	//	case updatePositionType::UPDATE_ALL:
+	//	{
+	//		gameWrapper->Execute([=, ballW = ballW, info = info](GameWrapper*) {
+	//			ActorWrapper(ballW.memory_address).SetLocation(info.location);
+	//			ActorWrapper(ballW.memory_address).SetRotation(info.rotation);
+	//			ActorWrapper(ballW.memory_address).SetVelocity(info.velocity);
+	//			ActorWrapper(ballW.memory_address).SetAngularVelocity(info.angVelocity, false);
+	//			});
+	//	}
+	//		break;
+	//	case updatePositionType::UPDATE_POSITION:
+	//	{
+	//		gameWrapper->Execute([=, ballW = ballW, info = info](GameWrapper*){
+	//			ActorWrapper(ballW.memory_address).SetLocation(info.location);
+	//			});
+	//	}
+	//		break;
+	//	case updatePositionType::UPDATE_ROTATION:
+	//	{
+	//		gameWrapper->Execute([=, ballW = ballW, info = info](GameWrapper*) {
+	//			ActorWrapper(ballW.memory_address).SetRotation(info.rotation);
+	//			});
+	//	}
+	//		break;
+	//	case updatePositionType::UPDATE_VELOCITY:
+	//	{
+	//		gameWrapper->Execute([=, ballW = ballW, info = info](GameWrapper*) {
+	//			ActorWrapper(ballW.memory_address).SetVelocity(info.velocity);
+	//			});
+	//	}
+	//		break;
+	//	case updatePositionType::UPDATE_ANGULAR_VELOCITY:
+	//	{
+	//		gameWrapper->Execute([=, ballW = ballW, info = info](GameWrapper*) {
+	//			ActorWrapper(ballW.memory_address).SetAngularVelocity(info.angVelocity, false);
+	//			});
+	//	}
+	//		break;
+	//	default:
+	//		break;
+	//	}
+	//}
+	//else
+	//{	
+	//	auto carsInGame = gameState.GetCars();
+	//	for (int i = 0; i < carsInGame.Count(); ++i)
+	//	{
+	//		auto car = carsInGame.Get(i);
+	//		if (car.GetOwnerName() != info.name)
+	//		{
+	//			if (info.name.find("Player ") != std::string::npos)
+	//			{
+	//				try
+	//				{
+	//					int playerID = std::stoi(info.name.substr(7, info.name.size()));
+	//					if (playerID != i)
+	//					{
+	//						continue;
+	//					}
+	//					//success - sheesh
+	//				}
+	//				catch (const std::exception&)
+	//				{
+	//					continue;
+	//				}
+	//			}
+	//			else
+	//			{
+	//				continue;
+
+	//			}
+	//		}
+	//		
+	//		switch (updateField)
+	//		{
+	//		case updatePositionType::UPDATE_ALL:
+	//		{
+	//			gameWrapper->Execute([=, car = car, info = info](GameWrapper*) {
+	//				ActorWrapper(car.memory_address).SetLocation(info.location);
+	//				ActorWrapper(car.memory_address).SetRotation(info.rotation);
+	//				ActorWrapper(car.memory_address).SetVelocity(info.velocity);
+	//				ActorWrapper(car.memory_address).SetAngularVelocity(info.angVelocity, false);
+	//				});
+	//		}
+	//		break;
+	//		case updatePositionType::UPDATE_POSITION:
+	//		{
+	//			gameWrapper->Execute([=, car = car, info = info](GameWrapper*) {
+	//				ActorWrapper(car.memory_address).SetLocation(info.location);
+	//				});
+	//		}
+	//			break;
+	//		case updatePositionType::UPDATE_ROTATION:
+	//		{
+	//			gameWrapper->Execute([=, car = car, info = info](GameWrapper*) {
+	//				ActorWrapper(car.memory_address).SetRotation(info.rotation);
+	//				});
+	//		}
+	//			break;
+	//		case updatePositionType::UPDATE_VELOCITY:
+	//		{
+	//			gameWrapper->Execute([=, car = car, info = info](GameWrapper*) {
+	//				ActorWrapper(car.memory_address).SetVelocity(info.velocity);
+	//				});
+	//		}
+	//			break;
+	//		case updatePositionType::UPDATE_ANGULAR_VELOCITY:
+	//		{
+	//			gameWrapper->Execute([=, car = car, info = info](GameWrapper*) {
+	//				ActorWrapper(car.memory_address).SetAngularVelocity(info.angVelocity, false);
+	//			});
+	//		}
+	//			break;
+	//		default:
+	//			break;
+	//		}
+	//	}
+	//}
 }
