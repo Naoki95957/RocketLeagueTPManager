@@ -3,6 +3,8 @@
 #include "bakkesmod/plugin/bakkesmodplugin.h"
 #include "bakkesmod/plugin/pluginwindow.h"
 #include "bakkesmod/plugin/PluginSettingsWindow.h"
+#include "imgui/imgui_searchablecombo.h"
+#include "imgui/imgui.h"
 
 #include "version.h"
 #include <chrono>
@@ -32,9 +34,10 @@ private:
 	std::mutex pollingMutex;
 	std::mutex finishedPolling;
 	bool pollForInfo;
-	std::vector<positionInfo> positionalInfo;
-	std::vector<int> comboSelection = std::vector<int>();
+	std::vector<positionInfo> positionalInfoAllEntities;
+	std::vector<std::string> itemsToSearch = std::vector<std::string>();
 	int numBalls = 0;
+	int currentTPItem = 0;
 
 	void getContinousInfo();
 	std::vector<positionInfo> pollPositionInfo();
@@ -55,6 +58,7 @@ public:
 
 	std::vector<positionInfo> getPositionInfo();
 	void setPositionInfo(positionInfo info, updatePositionType updateField = updatePositionType::UPDATE_ALL);
+	void teleportSelectionToEntity(int selection, positionInfo entity, bool above = false);
 
 	//// Inherited via PluginSettingsWindow
 	void RenderSettings() override;

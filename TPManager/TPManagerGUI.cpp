@@ -11,9 +11,8 @@ std::string TPManager::GetPluginName() {
 //  f2 -> plugins -> TPManager
 void TPManager::RenderSettings() {
 	//ImGui::TextUnformatted("TPManager plugin settings");
+	ImGui::PushItemWidth(350.0f);
 	RenderInfo();
-	ImGui::PushItemWidth(250.0f);
-	ImGui::SliderInt("Polling time (ms)", &pollingRateMiliseconds, 50, 5000);
 }
 
 // Do ImGui rendering here
@@ -25,9 +24,8 @@ void TPManager::Render()
 		ImGui::End();
 		return;
 	}
+	ImGui::PushItemWidth(350.0f);
 	RenderInfo();
-	ImGui::PushItemWidth(250.0f);
-	ImGui::SliderInt("Polling time (ms)", &pollingRateMiliseconds, 50, 5000);
 	ImGui::End();
 
 	if (!isWindowOpen_)
@@ -38,13 +36,16 @@ void TPManager::Render()
 
 void TPManager::RenderInfo() 
 {
-	ImGui::TextUnformatted("This is a GUI to look at and control postions and movements in game.");
+	ImGui::TextUnformatted("This is a GUI to look at and control postions and movements in game. Simply cuz I was tired of typing \"Player location x y z\" over and over");
 	//render/modify stuff
 	std::vector<positionInfo> info = getPositionInfo();
+	char input[1024];
 	if (info.size())
 	{
 		if (ImGui::TreeNode("Ball/s"))
 		{
+			ImGui::Separator();
+			ImGui::Indent(20);
 			for (int i = 0; i < numBalls; ++i)
 			{
 				if (ImGui::TreeNode(info[i].name.c_str()))
@@ -54,14 +55,31 @@ void TPManager::RenderInfo()
 					RenderVelocity(info[i]);
 					RenderAngularVelocity(info[i]);
 					RenderRotation(info[i]);
+					ImGui::NewLine();
+					ImGui::SearchableCombo("will TP", &currentTPItem, itemsToSearch, "No entities", "type to search");
+					ImGui::SameLine();
+					if (ImGui::Button("to here"))
+					{
+						teleportSelectionToEntity(currentTPItem, info[i]);
+					}
+					ImGui::SameLine();
+					if (ImGui::Button("above here"))
+					{
+						teleportSelectionToEntity(currentTPItem, info[i], true);
+					}
+					ImGui::NewLine();
 					pollingMutex.unlock();
 					ImGui::TreePop();
 				}
+				ImGui::Separator();
 			}
 			ImGui::TreePop();
 		}
+		ImGui::Separator();
 		if (ImGui::TreeNode("Player/s")) 
 		{
+			ImGui::Separator();
+			ImGui::Indent(20);
 			for (int i = numBalls; i < info.size(); ++i)
 			{
 				if (ImGui::TreeNode(info[i].name.c_str()))
@@ -71,9 +89,22 @@ void TPManager::RenderInfo()
 					RenderVelocity(info[i]);
 					RenderAngularVelocity(info[i]);
 					RenderRotation(info[i]);
+					ImGui::NewLine();
+					ImGui::SearchableCombo("will TP", &currentTPItem, itemsToSearch, "No entities", "type to search");
+					ImGui::SameLine();
+					if (ImGui::Button("to here"))
+					{
+						teleportSelectionToEntity(currentTPItem, info[i]);
+					}
+					ImGui::SameLine();
+					if (ImGui::Button("above here"))
+					{
+						teleportSelectionToEntity(currentTPItem, info[i], true);
+					}
 					pollingMutex.unlock();
 					ImGui::TreePop();
 				}
+				ImGui::Separator();
 			}
 			ImGui::TreePop();
 		}
@@ -82,6 +113,11 @@ void TPManager::RenderInfo()
 	{
 		ImGui::Text("Must be in a game to see/use.");
 	}
+
+	ImGui::Separator();
+	ImGui::NewLine();
+	ImGui::PushItemWidth(250.0f);
+	ImGui::SliderInt("Polling time (ms)", &pollingRateMiliseconds, 50, 5000);
 }
 
 void TPManager::RenderLocation(positionInfo entity)
