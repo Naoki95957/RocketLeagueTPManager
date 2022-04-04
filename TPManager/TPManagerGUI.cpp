@@ -48,15 +48,74 @@ void TPManager::RenderInfo()
 		ImGui::SameLine();
 		if (ImGui::Button("to"))
 		{
-			teleportSelectionToEntity(currentTPItem, info[destTPitem]);
+			// I didn't think ahead and I wanted this to appear first
+			if (destTPitem == 0) {
+				positionInfo customLocation = {
+					NULL,
+					std::string("Custom Location"),
+					Vector(customDestX, customDestY, customDestZ), 
+					NULL,
+					NULL,
+					NULL
+				};
+				teleportSelectionToEntity(currentTPItem, customLocation);
+			}
+			else
+			{
+				int destChoice = destTPitem - 1;
+				teleportSelectionToEntity(currentTPItem, info[destChoice]);
+			}
 		}
 		ImGui::SameLine();
 		if (ImGui::Button("above"))
 		{
-			teleportSelectionToEntity(currentTPItem, info[destTPitem], true);
+			// I didn't think ahead and I wanted this to appear first
+			if (destTPitem == 0) {
+				positionInfo customLocation = {
+					NULL,
+					std::string("Custom Location"),
+					Vector(customDestX, customDestY, customDestZ),
+					NULL,
+					NULL,
+					NULL
+				};
+				teleportSelectionToEntity(currentTPItem, customLocation);
+			}
+			else
+			{
+				int destChoice = destTPitem - 1;
+				teleportSelectionToEntity(currentTPItem, info[destChoice], true);
+			}
 		}
 		ImGui::SameLine();
 		ImGui::SearchableCombo("\0", &destTPitem, destToSearch, "No entities", "type to search");
+		if (ImGui::TreeNode("Custom location:"))
+		{
+			ImGui::BeginGroup();
+			ImGui::Text("X");
+			ImGui::SameLine();
+			ImGui::PushID("custom_x");
+			ImGui::DragFloat("", &(customDestX));
+			ImGui::PopID();
+			ImGui::EndGroup();
+			ImGui::SameLine();
+			ImGui::BeginGroup();
+			ImGui::Text("Y");
+			ImGui::SameLine();
+			ImGui::PushID("custom_y");
+			ImGui::DragFloat("", &(customDestY));
+			ImGui::PopID();
+			ImGui::EndGroup();
+			ImGui::SameLine();
+			ImGui::BeginGroup();
+			ImGui::Text("Z");
+			ImGui::SameLine();
+			ImGui::PushID("custom_z");
+			ImGui::DragFloat("", &(customDestZ));
+			ImGui::PopID();
+			ImGui::EndGroup();
+			ImGui::TreePop();
+		}
 		ImGui::Separator();
 		ImGui::PushItemWidth(350.0f);
 		if (ImGui::CollapsingHeader("Ball/s"))
@@ -120,7 +179,7 @@ void TPManager::RenderLocation(positionInfo entity)
 	ImGui::Text("X");
 	ImGui::SameLine();
 	ImGui::PushID(("Location_x" + std::to_string((uintptr_t) &entity)).c_str());
-	if (ImGui::DragFloat("", &(entity.location.X)), 5.0 && ImGui::IsItemActive() && ImGui::IsItemEdited())
+	if (ImGui::DragFloat("", &(entity.location.X)) && ImGui::IsItemActive() && ImGui::IsItemEdited())
 	{
 		setPositionInfo(entity, updatePositionType::UPDATE_POSITION);
 	}
@@ -131,7 +190,7 @@ void TPManager::RenderLocation(positionInfo entity)
 	ImGui::Text("Y");
 	ImGui::SameLine();
 	ImGui::PushID(("Location_y" + std::to_string((uintptr_t)&entity)).c_str());
-	if (ImGui::DragFloat("", &(entity.location.Y)), 5.0 && ImGui::IsItemActive() && ImGui::IsItemEdited())
+	if (ImGui::DragFloat("", &(entity.location.Y)) && ImGui::IsItemActive() && ImGui::IsItemEdited())
 	{
 		setPositionInfo(entity, updatePositionType::UPDATE_POSITION);
 	}
@@ -142,7 +201,7 @@ void TPManager::RenderLocation(positionInfo entity)
 	ImGui::Text("Z");
 	ImGui::SameLine();
 	ImGui::PushID(("Location_z" + std::to_string((uintptr_t)&entity)).c_str());
-	if (ImGui::DragFloat("", &(entity.location.Z)), 5.0 && ImGui::IsItemActive() && ImGui::IsItemEdited())
+	if (ImGui::DragFloat("", &(entity.location.Z)) && ImGui::IsItemActive() && ImGui::IsItemEdited())
 	{
 		setPositionInfo(entity, updatePositionType::UPDATE_POSITION);
 	}

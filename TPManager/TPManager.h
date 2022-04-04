@@ -40,6 +40,7 @@ private:
 	int numBalls = 0;
 	int currentTPItem = 0;
 	int destTPitem = 0;
+	float customDestX = 0.0f, customDestY = 0.0f, customDestZ = 0.0f;
 
 	void getContinousInfo();
 	std::vector<positionInfo> pollPositionInfo();

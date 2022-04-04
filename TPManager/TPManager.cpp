@@ -131,10 +131,12 @@ std::vector<positionInfo> TPManager::pollPositionInfo()
 	//list containing all moving objects
 	std::vector<positionInfo> allEntities = std::vector<positionInfo>();
 	itemsToSearch = std::vector<std::string>();
-	destToSearch = std::vector<std::string>();
 	itemsToSearch.push_back("All entities");
 	itemsToSearch.push_back("All players");
 	itemsToSearch.push_back("All balls");
+
+	destToSearch = std::vector<std::string>();
+	destToSearch.push_back("Custom location");
 
 	// per ball
 	ArrayWrapper<BallWrapper> balls = gameState.GetGameBalls();
