@@ -48,8 +48,8 @@ void TPManager::getContinousInfo()
 			positionalInfoAllEntities = std::vector<positionInfo>();
 		}
 		pollingMutex.unlock();
-		if (pollingRateMiliseconds < 50)
-			pollingRateMiliseconds = 50;
+		if (pollingRateMiliseconds < 5)
+			pollingRateMiliseconds = 5;
 		if (pollingRateMiliseconds > 5000)
 			pollingRateMiliseconds = 5000;
 		std::this_thread::sleep_for(std::chrono::milliseconds(pollingRateMiliseconds));
@@ -87,7 +87,7 @@ void TPManager::teleportSelectionToEntity(int selection, positionInfo entity, bo
 			{
 				ent.location = entity.location;
 				if (above)
-					ent.location.Z += 250.0f * (i + 1);
+					ent.location.Z += 250.0f * (i - numBalls + 1);
 				setPositionInfo(ent, updatePositionType::UPDATE_POSITION);
 			}
 		}
@@ -131,6 +131,7 @@ std::vector<positionInfo> TPManager::pollPositionInfo()
 	//list containing all moving objects
 	std::vector<positionInfo> allEntities = std::vector<positionInfo>();
 	itemsToSearch = std::vector<std::string>();
+	destToSearch = std::vector<std::string>();
 	itemsToSearch.push_back("All entities");
 	itemsToSearch.push_back("All players");
 	itemsToSearch.push_back("All balls");
@@ -142,6 +143,7 @@ std::vector<positionInfo> TPManager::pollPositionInfo()
 		{
 			std::string name = "Ball " + std::to_string(i);
 			itemsToSearch.push_back(name);
+			destToSearch.push_back(name);
 			allEntities.push_back({
 			balls.Get(i),
 			name,
@@ -178,6 +180,7 @@ std::vector<positionInfo> TPManager::pollPositionInfo()
 				name = "Player " + std::to_string(i);
 			}
 			itemsToSearch.push_back(name);
+			destToSearch.push_back(name);
 			allEntities.push_back({
 				car,
 				name,
@@ -194,49 +197,56 @@ std::vector<positionInfo> TPManager::pollPositionInfo()
 void TPManager::setPositionInfo(positionInfo info, updatePositionType updateField)
 {
 	pollingMutex.lock();
-	ServerWrapper gameState = gameWrapper.get()->GetCurrentGameState();
-	switch (updateField)
+	try
 	{
+		ServerWrapper gameState = gameWrapper.get()->GetCurrentGameState();
+		switch (updateField)
+		{
 		case updatePositionType::UPDATE_ALL:
-			{
-				gameWrapper->Execute([=, info = info](GameWrapper*) {
-					ActorWrapper(info.actor.memory_address).SetLocation(info.location);
-					ActorWrapper(info.actor.memory_address).SetRotation(info.rotation);
-					ActorWrapper(info.actor.memory_address).SetVelocity(info.velocity);
-					ActorWrapper(info.actor.memory_address).SetAngularVelocity(info.angVelocity, false);
-					});
-			}
-			break;
+		{
+			gameWrapper->Execute([=, info = info](GameWrapper*) {
+				ActorWrapper(info.actor.memory_address).SetLocation(info.location);
+				ActorWrapper(info.actor.memory_address).SetRotation(info.rotation);
+				ActorWrapper(info.actor.memory_address).SetVelocity(info.velocity);
+				ActorWrapper(info.actor.memory_address).SetAngularVelocity(info.angVelocity, false);
+				});
+		}
+		break;
 		case updatePositionType::UPDATE_POSITION:
-			{
-				gameWrapper->Execute([=, info = info](GameWrapper*) {
-					ActorWrapper(info.actor.memory_address).SetLocation(info.location);
-					});
-			}
-			break;
+		{
+			gameWrapper->Execute([=, info = info](GameWrapper*) {
+				ActorWrapper(info.actor.memory_address).SetLocation(info.location);
+				});
+		}
+		break;
 		case updatePositionType::UPDATE_ROTATION:
-			{
-				gameWrapper->Execute([=, info = info](GameWrapper*) {
-					ActorWrapper(info.actor.memory_address).SetRotation(info.rotation);
-					});
-			}
-			break;
+		{
+			gameWrapper->Execute([=, info = info](GameWrapper*) {
+				ActorWrapper(info.actor.memory_address).SetRotation(info.rotation);
+				});
+		}
+		break;
 		case updatePositionType::UPDATE_VELOCITY:
-			{
-				gameWrapper->Execute([=, info = info](GameWrapper*) {
-					ActorWrapper(info.actor.memory_address).SetVelocity(info.velocity);
-					});
-			}
-			break;
+		{
+			gameWrapper->Execute([=, info = info](GameWrapper*) {
+				ActorWrapper(info.actor.memory_address).SetVelocity(info.velocity);
+				});
+		}
+		break;
 		case updatePositionType::UPDATE_ANGULAR_VELOCITY:
-			{
-				gameWrapper->Execute([=, info = info](GameWrapper*) {
-					ActorWrapper(info.actor.memory_address).SetAngularVelocity(info.angVelocity, false);
-					});
-			}
-			break;
+		{
+			gameWrapper->Execute([=, info = info](GameWrapper*) {
+				ActorWrapper(info.actor.memory_address).SetAngularVelocity(info.angVelocity, false);
+				});
+		}
+		break;
 		default:
 			break;
+		}
+	}
+	catch (const std::exception&)
+	{
+		cvarManager->log("Failed to update position");
 	}
 	pollingMutex.unlock();
 }

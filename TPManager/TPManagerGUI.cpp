@@ -10,7 +10,6 @@ std::string TPManager::GetPluginName() {
 // This will show up in bakkesmod when the plugin is loaded at
 //  f2 -> plugins -> TPManager
 void TPManager::RenderSettings() {
-	//ImGui::TextUnformatted("TPManager plugin settings");
 	ImGui::PushItemWidth(350.0f);
 	RenderInfo();
 }
@@ -43,31 +42,39 @@ void TPManager::RenderInfo()
 	std::vector<positionInfo> info = getPositionInfo();
 	if (info.size())
 	{
+		ImGui::PushItemWidth(150.0f);
+		ImGui::Text("Teleport:");
+		ImGui::SearchableCombo("will TP", &currentTPItem, itemsToSearch, "No entities", "type to search");
+		ImGui::SameLine();
+		if (ImGui::Button("to"))
+		{
+			teleportSelectionToEntity(currentTPItem, info[destTPitem]);
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("above"))
+		{
+			teleportSelectionToEntity(currentTPItem, info[destTPitem], true);
+		}
+		ImGui::SameLine();
+		ImGui::SearchableCombo("\0", &destTPitem, destToSearch, "No entities", "type to search");
+		ImGui::Separator();
+		ImGui::PushItemWidth(350.0f);
 		if (ImGui::CollapsingHeader("Ball/s"))
 		{
 			ImGui::Indent(20);
 			for (int i = 0; i < numBalls; ++i)
 			{
-				if (ImGui::CollapsingHeader(info[i].name.c_str()))
+				if (ImGui::TreeNode(info[i].name.c_str()))
 				{
 					ImGui::Indent(20);
 					RenderLocation(info[i]);
 					RenderVelocity(info[i]);
 					RenderAngularVelocity(info[i]);
 					RenderRotation(info[i]);
-					ImGui::NewLine();
-					ImGui::SearchableCombo("will TP", &currentTPItem, itemsToSearch, "No entities", "type to search");
-					ImGui::SameLine();
-					if (ImGui::Button("to here"))
-					{
-						teleportSelectionToEntity(currentTPItem, info[i]);
-					}
-					ImGui::SameLine();
-					if (ImGui::Button("above here"))
-					{
-						teleportSelectionToEntity(currentTPItem, info[i], true);
-					}
+					ImGui::NewLine(); 
+					ImGui::Separator();
 					ImGui::Unindent();
+					ImGui::TreePop();
 				}
 			}
 			ImGui::Unindent();
@@ -78,7 +85,7 @@ void TPManager::RenderInfo()
 			ImGui::Indent(20);
 			for (int i = numBalls; i < info.size(); ++i)
 			{
-				if (ImGui::CollapsingHeader(info[i].name.c_str()))
+				if (ImGui::TreeNode(info[i].name.c_str()))
 				{
 					ImGui::Indent(20);
 					RenderLocation(info[i]);
@@ -86,18 +93,9 @@ void TPManager::RenderInfo()
 					RenderAngularVelocity(info[i]);
 					RenderRotation(info[i]);
 					ImGui::NewLine();
-					ImGui::SearchableCombo("will TP", &currentTPItem, itemsToSearch, "No entities", "type to search");
-					ImGui::SameLine();
-					if (ImGui::Button("to here"))
-					{
-						teleportSelectionToEntity(currentTPItem, info[i]);
-					}
-					ImGui::SameLine();
-					if (ImGui::Button("above here"))
-					{
-						teleportSelectionToEntity(currentTPItem, info[i], true);
-					}
+					ImGui::Separator();
 					ImGui::Unindent();
+					ImGui::TreePop();
 				}
 			}
 			ImGui::Unindent();
@@ -111,7 +109,7 @@ void TPManager::RenderInfo()
 	ImGui::Separator();
 	ImGui::NewLine();
 	ImGui::PushItemWidth(250.0f);
-	ImGui::SliderInt("Polling time (ms)", &pollingRateMiliseconds, 50, 5000);
+	ImGui::SliderInt("Polling time (ms)", &pollingRateMiliseconds, 5, 5000);
 }
 
 void TPManager::RenderLocation(positionInfo entity)

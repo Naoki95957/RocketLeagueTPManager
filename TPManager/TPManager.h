@@ -36,8 +36,10 @@ private:
 	bool pollForInfo;
 	std::vector<positionInfo> positionalInfoAllEntities;
 	std::vector<std::string> itemsToSearch = std::vector<std::string>();
+	std::vector<std::string> destToSearch = std::vector<std::string>();
 	int numBalls = 0;
 	int currentTPItem = 0;
+	int destTPitem = 0;
 
 	void getContinousInfo();
 	std::vector<positionInfo> pollPositionInfo();
