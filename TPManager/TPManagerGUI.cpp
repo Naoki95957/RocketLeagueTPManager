@@ -50,7 +50,6 @@ void TPManager::RenderInfo()
 			{
 				if (ImGui::CollapsingHeader(info[i].name.c_str()))
 				{
-					pollingMutex.lock();
 					ImGui::Indent(20);
 					RenderLocation(info[i]);
 					RenderVelocity(info[i]);
@@ -69,7 +68,6 @@ void TPManager::RenderInfo()
 						teleportSelectionToEntity(currentTPItem, info[i], true);
 					}
 					ImGui::Unindent();
-					pollingMutex.unlock();
 				}
 			}
 			ImGui::Unindent();
@@ -82,7 +80,6 @@ void TPManager::RenderInfo()
 			{
 				if (ImGui::CollapsingHeader(info[i].name.c_str()))
 				{
-					pollingMutex.lock();
 					ImGui::Indent(20);
 					RenderLocation(info[i]);
 					RenderVelocity(info[i]);
@@ -101,7 +98,6 @@ void TPManager::RenderInfo()
 						teleportSelectionToEntity(currentTPItem, info[i], true);
 					}
 					ImGui::Unindent();
-					pollingMutex.unlock();
 				}
 			}
 			ImGui::Unindent();

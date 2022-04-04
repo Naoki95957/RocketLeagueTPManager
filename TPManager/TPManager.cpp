@@ -193,6 +193,7 @@ std::vector<positionInfo> TPManager::pollPositionInfo()
 
 void TPManager::setPositionInfo(positionInfo info, updatePositionType updateField)
 {
+	pollingMutex.lock();
 	ServerWrapper gameState = gameWrapper.get()->GetCurrentGameState();
 	switch (updateField)
 	{
@@ -237,4 +238,5 @@ void TPManager::setPositionInfo(positionInfo info, updatePositionType updateFiel
 		default:
 			break;
 	}
+	pollingMutex.unlock();
 }
