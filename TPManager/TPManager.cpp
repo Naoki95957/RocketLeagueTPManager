@@ -1,22 +1,48 @@
 #include "pch.h"
 #include "TPManager.h"
 
-BAKKESMOD_PLUGIN(TPManager, "This plugin provides a basic GUI for teleporting players", plugin_version, PLUGINTYPE_FREEPLAY)
+BAKKESMOD_PLUGIN(TPManager, "This plugin provides a basic GUI for teleporting players", plugin_version, PLUGINTYPE_THREADED)
 
 std::shared_ptr<CVarManagerWrapper> _globalCvarManager;
 
 void TPManager::onLoad()
 {
 	_globalCvarManager = cvarManager;
-	// TODO listen to which GUI element is being edited at any given time -> 
-	// that way you only update 1 entity 
-	// instead of all entities
+	pollForInfo = true;
+
+	cvarManager->registerNotifier("get_tpinfo", [this](std::vector<std::string> args) {
+		std::vector<positionInfo> info = getPositionInfo();
+		cvarManager->log("Entities: " + std::to_string(info.size()));
+		for (short i = 0; i < info.size(); ++i)
+		{
+			cvarManager->log("Ent: " + std::to_string(i));
+			cvarManager->log("Name: " + info[i].name);
+			cvarManager->log("Loc: x:" + std::to_string(info[i].location.X) + " y:" + std::to_string(info[i].location.Y) + " z:" + std::to_string(info[i].location.Z));
+			cvarManager->log("Rot: pitch:" + std::to_string(info[i].rotation.Pitch) + " yaw:" + std::to_string(info[i].rotation.Yaw) + " roll:" + std::to_string(info[i].rotation.Roll));
+			cvarManager->log("Vel: x:" + std::to_string(info[i].velocity.X) + " y:" + std::to_string(info[i].velocity.Y) + " z:" + std::to_string(info[i].velocity.Z));
+			cvarManager->log("AngVel: x:" + std::to_string(info[i].angVelocity.X) + " y:" + std::to_string(info[i].angVelocity.Y) + " z:" + std::to_string(info[i].angVelocity.Z));
+		}
+		}, "", 0);
+
+	cvarManager->registerNotifier("set_ball_location", [this](std::vector<std::string> args) {
+		std::vector<positionInfo> info = getPositionInfo();
+		if (args.size() < 3)
+		{
+			cvarManager->log("req. 3 args");
+			return;
+		}
+		float x = std::stof(args[1]);
+		float y = std::stof(args[2]);
+		float z = std::stof(args[3]);
+
+		cvarManager->log("Setting pos of ball - " + std::to_string(x) + " - " + std::to_string(y) + " - " + std::to_string(z));
+		gameWrapper.get()->GetCurrentGameState().GetBall().SetLocation(Vector(x, y, z));
+		}, "", 0);
+
+	getContinousInfo();
+	// TODO maybe make polling a dial
 
 	//cvarManager->log("Plugin loaded!");
-
-	//cvarManager->registerNotifier("my_aweseome_notifier", [&](std::vector<std::string> args) {
-	//	cvarManager->log("Hello notifier!");
-	//}, "", 0);
 
 	//auto cvar = cvarManager->registerCvar("template_cvar", "hello-cvar", "just a example of a cvar");
 	//auto cvar2 = cvarManager->registerCvar("template_cvar2", "0", "just a example of a cvar with more settings", true, true, -10, true, 10 );
@@ -48,105 +74,213 @@ void TPManager::onLoad()
 
 void TPManager::onUnload()
 {
+	pollForInfo = false;
+	finishedPolling.lock();
+	finishedPolling.unlock();
 }
 
-std::vector<positionInfo> TPManager::getPositionInfo()
+void TPManager::getContinousInfo() 
 {
+	finishedPolling.lock();
+	while (pollForInfo) {
+		pollingMutex.lock();
+		try
+		{
+			positionalInfo = pollPositionInfo();
+		}
+		catch (const std::exception&)
+		{
+			positionalInfo = std::vector<positionInfo>();
+		}
+		pollingMutex.unlock();
+		std::this_thread::sleep_for(std::chrono::milliseconds(pollingRateMiliseconds));
+	}
+	finishedPolling.unlock();
+}
+
+std::vector<positionInfo> TPManager::getPositionInfo() { return positionalInfo; }
+
+std::vector<positionInfo> TPManager::pollPositionInfo()
+{
+	if (!gameWrapper->IsInGame())
+	{
+		return std::vector<positionInfo>();
+	}
+
 	ServerWrapper gameState = gameWrapper.get()->GetCurrentGameState();
 
 	//list containing all moving objects
 	std::vector<positionInfo> allEntities = std::vector<positionInfo>();
 
+	//TODO convert to array wrapper
 	//ball
-	allEntities.push_back({
-		"Ball",
-		gameState.GetBall().GetLocation(),
-		gameState.GetBall().GetRotation(),
-		gameState.GetBall().GetVelocity(),
-		gameState.GetBall().GetAngularVelocity()
-	});
-
+	if (gameState.GetBall()) 
+	{
+		allEntities.push_back({
+			"Ball",
+			gameState.GetBall().GetLocation(),
+			gameState.GetBall().GetRotation(),
+			gameState.GetBall().GetVelocity(),
+			gameState.GetBall().GetAngularVelocity()
+		});
+	}
+	
 	// per car
 	ArrayWrapper cars = gameState.GetCars();
+
 	std::vector<CarWrapper> carVector = std::vector<CarWrapper>();
 	for (auto car : cars) {
 		carVector.push_back(car);
 	}
 
-	std::sort(carVector.begin(), carVector.end(), [](CarWrapper& a, CarWrapper& b) -> bool
+	if (!carVector.empty())
 	{
-		return a.GetOwnerName() < b.GetOwnerName();
-	});
+		std::sort(carVector.begin(), carVector.end(), [](CarWrapper& a, CarWrapper& b) -> bool
+			{
+				return a.GetOwnerName() < b.GetOwnerName();
+			});
 
-	for (auto car : carVector) 
-	{
-		allEntities.push_back({
-			car.GetOwnerName(),
-			car.GetLocation(),
-			car.GetRotation(),
-			car.GetVelocity(),
-			car.GetAngularVelocity()
-		});
+
+		for (int i = 0; i < carVector.size(); ++i)
+		{
+			auto car = carVector[i];
+			// Since there currently exists a bug grabbing player names...
+			std::string name = car.GetOwnerName();
+			if (name.size() < 1)
+			{
+				name = "Player " + std::to_string(i);
+			}
+			allEntities.push_back({
+				name,
+				car.GetLocation(),
+				car.GetRotation(),
+				car.GetVelocity(),
+				car.GetAngularVelocity()
+			});
+		}
 	}
-
 	return allEntities;
 }
 
-void TPManager::setPositionInfo(positionInfo info, unsigned short updateField)
+void TPManager::setPositionInfo(positionInfo info, updatePositionType updateField)
 {
 	ServerWrapper gameState = gameWrapper.get()->GetCurrentGameState();
-
 	if (info.name == "Ball") {
 		BallWrapper ballW = gameState.GetBall();
 		switch (updateField)
 		{
-		case UPDATE_ALL:
-			ballW.SetLocation(info.location);
-			ballW.SetRotation(info.rotation);
-			ballW.SetVelocity(info.velocity);
-			ballW.SetAngularVelocity(info.velocity, false);
+		case updatePositionType::UPDATE_ALL:
+		{
+			gameWrapper->Execute([=, ballW = ballW, info = info](GameWrapper*) {
+				ActorWrapper(ballW.memory_address).SetLocation(info.location);
+				ActorWrapper(ballW.memory_address).SetRotation(info.rotation);
+				ActorWrapper(ballW.memory_address).SetVelocity(info.velocity);
+				ActorWrapper(ballW.memory_address).SetAngularVelocity(info.angVelocity, false);
+				});
+		}
 			break;
-		case UPDATE_POSITION:
-			ballW.SetLocation(info.location);
+		case updatePositionType::UPDATE_POSITION:
+		{
+			gameWrapper->Execute([=, ballW = ballW, info = info](GameWrapper*){
+				ActorWrapper(ballW.memory_address).SetLocation(info.location);
+				});
+		}
 			break;
-		case UPDATE_ROTATION:
-			ballW.SetRotation(info.rotation);
+		case updatePositionType::UPDATE_ROTATION:
+		{
+			gameWrapper->Execute([=, ballW = ballW, info = info](GameWrapper*) {
+				ActorWrapper(ballW.memory_address).SetRotation(info.rotation);
+				});
+		}
 			break;
-		case UPDATE_VELOCITY:
-			ballW.SetVelocity(info.velocity);
+		case updatePositionType::UPDATE_VELOCITY:
+		{
+			gameWrapper->Execute([=, ballW = ballW, info = info](GameWrapper*) {
+				ActorWrapper(ballW.memory_address).SetVelocity(info.velocity);
+				});
+		}
 			break;
-		case UPDATE_ANGULAR_VELOCITY:
-			ballW.SetAngularVelocity(info.velocity, false);
+		case updatePositionType::UPDATE_ANGULAR_VELOCITY:
+		{
+			gameWrapper->Execute([=, ballW = ballW, info = info](GameWrapper*) {
+				ActorWrapper(ballW.memory_address).SetAngularVelocity(info.angVelocity, false);
+				});
+		}
 			break;
 		default:
 			break;
 		}
 	}
 	else
-	{
-		for (auto car : gameState.GetCars()) {
+	{	
+		auto carsInGame = gameState.GetCars();
+		for (int i = 0; i < carsInGame.Count(); ++i)
+		{
+			auto car = carsInGame.Get(i);
 			if (car.GetOwnerName() != info.name)
-				continue;
+			{
+				if (info.name.find("Player ") != std::string::npos)
+				{
+					try
+					{
+						int playerID = std::stoi(info.name.substr(7, info.name.size()));
+						if (playerID != i)
+						{
+							continue;
+						}
+						//success - sheesh
+					}
+					catch (const std::exception&)
+					{
+						continue;
+					}
+				}
+				else
+				{
+					continue;
+
+				}
+			}
 			
 			switch (updateField)
 			{
-			case UPDATE_ALL:
-				car.SetLocation(info.location);
-				car.SetRotation(info.rotation);
-				car.SetVelocity(info.velocity);
-				car.SetAngularVelocity(info.velocity, false);
+			case updatePositionType::UPDATE_ALL:
+			{
+				gameWrapper->Execute([=, car = car, info = info](GameWrapper*) {
+					ActorWrapper(car.memory_address).SetLocation(info.location);
+					ActorWrapper(car.memory_address).SetRotation(info.rotation);
+					ActorWrapper(car.memory_address).SetVelocity(info.velocity);
+					ActorWrapper(car.memory_address).SetAngularVelocity(info.angVelocity, false);
+					});
+			}
+			break;
+			case updatePositionType::UPDATE_POSITION:
+			{
+				gameWrapper->Execute([=, car = car, info = info](GameWrapper*) {
+					ActorWrapper(car.memory_address).SetLocation(info.location);
+					});
+			}
 				break;
-			case UPDATE_POSITION:
-				car.SetLocation(info.location);
+			case updatePositionType::UPDATE_ROTATION:
+			{
+				gameWrapper->Execute([=, car = car, info = info](GameWrapper*) {
+					ActorWrapper(car.memory_address).SetRotation(info.rotation);
+					});
+			}
 				break;
-			case UPDATE_ROTATION:
-				car.SetRotation(info.rotation);
+			case updatePositionType::UPDATE_VELOCITY:
+			{
+				gameWrapper->Execute([=, car = car, info = info](GameWrapper*) {
+					ActorWrapper(car.memory_address).SetVelocity(info.velocity);
+					});
+			}
 				break;
-			case UPDATE_VELOCITY:
-				car.SetVelocity(info.velocity);
-				break;
-			case UPDATE_ANGULAR_VELOCITY:
-				car.SetAngularVelocity(info.velocity, false);
+			case updatePositionType::UPDATE_ANGULAR_VELOCITY:
+			{
+				gameWrapper->Execute([=, car = car, info = info](GameWrapper*) {
+					ActorWrapper(car.memory_address).SetAngularVelocity(info.angVelocity, false);
+				});
+			}
 				break;
 			default:
 				break;

@@ -5,13 +5,15 @@
 #include "bakkesmod/plugin/PluginSettingsWindow.h"
 
 #include "version.h"
+#include <chrono>
+#include <thread>
+
 constexpr auto plugin_version = stringify(VERSION_MAJOR) "." stringify(VERSION_MINOR) "." stringify(VERSION_PATCH) "." stringify(VERSION_BUILD);
 
-const unsigned short UPDATE_ALL = 0;
-const unsigned short UPDATE_POSITION = 1;
-const unsigned short UPDATE_ROTATION = 2;
-const unsigned short UPDATE_VELOCITY = 3;
-const unsigned short UPDATE_ANGULAR_VELOCITY = 4;
+enum class updatePositionType
+{	
+	UPDATE_ALL,UPDATE_POSITION, UPDATE_ROTATION, UPDATE_VELOCITY, UPDATE_ANGULAR_VELOCITY
+};
 
 struct positionInfo
 {
@@ -22,8 +24,27 @@ struct positionInfo
 	Vector angVelocity;
 };
 
-class TPManager: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::Plugin::PluginSettingsWindow*//*, public BakkesMod::Plugin::PluginWindow*/
+class TPManager: public BakkesMod::Plugin::BakkesModPlugin, public BakkesMod::Plugin::PluginSettingsWindow, public BakkesMod::Plugin::PluginWindow
 {
+
+private:
+	std::mutex pollingMutex;
+	std::mutex finishedPolling;
+	bool pollForInfo;
+	std::vector<positionInfo> positionalInfo;
+	std::vector<int> comboSelection = std::vector<int>();
+
+	void getContinousInfo();
+	std::vector<positionInfo> pollPositionInfo();
+
+	void RenderInfo();
+	void RenderLocation(positionInfo entity);
+	void RenderRotation(positionInfo entity);
+	void RenderVelocity(positionInfo entity);
+	void RenderAngularVelocity(positionInfo entity);
+
+public:
+	unsigned int pollingRateMiliseconds = 250;
 	//std::shared_ptr<bool> enabled;
 
 	//Boilerplate
@@ -31,26 +52,24 @@ class TPManager: public BakkesMod::Plugin::BakkesModPlugin/*, public BakkesMod::
 	virtual void onUnload();
 
 	std::vector<positionInfo> getPositionInfo();
-	void setPositionInfo(positionInfo info, unsigned short updateField = UPDATE_ALL);
+	void setPositionInfo(positionInfo info, updatePositionType updateField = updatePositionType::UPDATE_ALL);
 
 	//// Inherited via PluginSettingsWindow
-	//void RenderSettings() override;
-	//std::string GetPluginName() override;
-	//void SetImGuiContext(uintptr_t ctx) override;
+	void RenderSettings() override;
+	std::string GetPluginName() override;
 
 	//// Inherited via PluginWindow
+	bool isWindowOpen_ = false;
+	bool isMinimized_ = false;
+	std::string menuTitle_ = "TPManager";
 
-	//bool isWindowOpen_ = false;
-	//bool isMinimized_ = false;
-	//std::string menuTitle_ = "TPManager";
-
-	//virtual void Render() override;
-	//virtual std::string GetMenuName() override;
-	//virtual std::string GetMenuTitle() override;
-	//virtual void SetImGuiContext(uintptr_t ctx) override;
-	//virtual bool ShouldBlockInput() override;
-	//virtual bool IsActiveOverlay() override;
-	//virtual void OnOpen() override;
-	//virtual void OnClose() override;
+	virtual void Render() override;
+	virtual std::string GetMenuName() override;
+	virtual std::string GetMenuTitle() override;
+	virtual void SetImGuiContext(uintptr_t ctx) override;
+	virtual bool ShouldBlockInput() override;
+	virtual bool IsActiveOverlay() override;
+	virtual void OnOpen() override;
+	virtual void OnClose() override;
 };
 
