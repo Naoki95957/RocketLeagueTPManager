@@ -41,7 +41,6 @@ void TPManager::RenderInfo()
 	
 	//render/modify stuff
 	std::vector<positionInfo> info = getPositionInfo();
-	char input[1024];
 	if (info.size())
 	{
 		if (ImGui::CollapsingHeader("Ball/s"))
@@ -49,9 +48,10 @@ void TPManager::RenderInfo()
 			ImGui::Indent(20);
 			for (int i = 0; i < numBalls; ++i)
 			{
-				if (ImGui::TreeNode(info[i].name.c_str()))
+				if (ImGui::CollapsingHeader(info[i].name.c_str()))
 				{
 					pollingMutex.lock();
+					ImGui::Indent(20);
 					RenderLocation(info[i]);
 					RenderVelocity(info[i]);
 					RenderAngularVelocity(info[i]);
@@ -68,9 +68,8 @@ void TPManager::RenderInfo()
 					{
 						teleportSelectionToEntity(currentTPItem, info[i], true);
 					}
-					ImGui::NewLine();
+					ImGui::Unindent();
 					pollingMutex.unlock();
-					ImGui::TreePop();
 				}
 			}
 			ImGui::Unindent();
@@ -81,9 +80,10 @@ void TPManager::RenderInfo()
 			ImGui::Indent(20);
 			for (int i = numBalls; i < info.size(); ++i)
 			{
-				if (ImGui::TreeNode(info[i].name.c_str()))
+				if (ImGui::CollapsingHeader(info[i].name.c_str()))
 				{
 					pollingMutex.lock();
+					ImGui::Indent(20);
 					RenderLocation(info[i]);
 					RenderVelocity(info[i]);
 					RenderAngularVelocity(info[i]);
@@ -100,8 +100,8 @@ void TPManager::RenderInfo()
 					{
 						teleportSelectionToEntity(currentTPItem, info[i], true);
 					}
+					ImGui::Unindent();
 					pollingMutex.unlock();
-					ImGui::TreePop();
 				}
 			}
 			ImGui::Unindent();
