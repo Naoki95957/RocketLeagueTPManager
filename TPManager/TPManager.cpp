@@ -108,7 +108,8 @@ void TPManager::teleportSelectionToEntity(int selection, positionInfo entity, bo
 	}
 	else
 	{
-		auto ent = positionalInfoAllEntities.at((selection - 3));
+		int selected = selection - 3;
+		auto ent = positionalInfoAllEntities.at(selected);
 		if (ent.actor.memory_address != entity.actor.memory_address)
 		{
 			ent.location = entity.location;
@@ -128,13 +129,17 @@ std::vector<positionInfo> TPManager::pollPositionInfo()
 
 	ServerWrapper gameState = gameWrapper.get()->GetCurrentGameState();
 
+	// This is how I'm forcing special options used in the GUI
+
 	//list containing all moving objects
+	//+ a few specail options
 	std::vector<positionInfo> allEntities = std::vector<positionInfo>();
 	itemsToSearch = std::vector<std::string>();
 	itemsToSearch.push_back("All entities");
 	itemsToSearch.push_back("All players");
 	itemsToSearch.push_back("All balls");
 
+	// List that contains all destinations
 	destToSearch = std::vector<std::string>();
 	destToSearch.push_back("Custom location");
 

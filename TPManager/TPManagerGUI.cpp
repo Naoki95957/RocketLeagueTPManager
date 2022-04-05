@@ -49,6 +49,10 @@ void TPManager::RenderInfo()
 		if (ImGui::Button("to"))
 		{
 			// I didn't think ahead and I wanted this to appear first
+			// so this is me circumventing the fact that my array only holds
+			// entities and not this custom location. 
+			//
+			// one can refer to TPManager.cpp line 142 to see why
 			if (destTPitem == 0) {
 				positionInfo customLocation = {
 					NULL,
@@ -70,6 +74,8 @@ void TPManager::RenderInfo()
 		if (ImGui::Button("above"))
 		{
 			// I didn't think ahead and I wanted this to appear first
+			// so this is me circumventing the fact that my array only holds
+			// entities and not this custom location. 
 			if (destTPitem == 0) {
 				positionInfo customLocation = {
 					NULL,
