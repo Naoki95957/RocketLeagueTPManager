@@ -211,7 +211,7 @@ bool ImGui::SearchableCombo(const char* label, int* current_item, std::vector<st
         PopID();
     }
     if (matched_items == 0)
-        ImGui::Selectable("No maps found", false, ImGuiSelectableFlags_Disabled);
+        ImGui::Selectable("No item found", false, ImGuiSelectableFlags_Disabled);
 
     EndSearchableCombo();
 

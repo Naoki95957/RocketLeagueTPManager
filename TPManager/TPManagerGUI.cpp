@@ -88,7 +88,7 @@ void TPManager::RenderInfo()
 					NULL,
 					NULL
 				};
-				teleportSelectionToEntity(choiceSelection, customLocation);
+				teleportSelectionToEntity(choiceSelection, customLocation, true);
 			}
 			else
 			{
