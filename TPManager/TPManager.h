@@ -37,9 +37,14 @@ private:
 	std::vector<positionInfo> positionalInfoAllEntities;
 	std::vector<std::string> itemsToSearch = std::vector<std::string>();
 	std::vector<std::string> destToSearch = std::vector<std::string>();
+	int totalNumEntities = 0;
 	int numBalls = 0;
-	int currentTPItem = 0;
-	int destTPitem = 0;
+
+	const char* SELECTION = "selection_tpmanager";
+	const char* DESTINATION = "destination_tpmanager";
+	int choiceSelection = 0;
+	int choiceDestination = 0;
+
 	float customDestX = 0.0f, customDestY = 0.0f, customDestZ = 0.0f;
 
 	void getContinousInfo();

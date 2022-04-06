@@ -33,18 +33,21 @@ void TPManager::Render()
 	}
 }
 
-void TPManager::RenderInfo() 
+void TPManager::RenderInfo()
 {
 	ImGui::TextUnformatted("This is a GUI to look at and control postions and movements in game. All cuz I was tired of typing \"Player location x y z\" over and over");
 	ImGui::Separator();
-	
+
 	//render/modify stuff
 	std::vector<positionInfo> info = getPositionInfo();
 	if (info.size())
 	{
 		ImGui::PushItemWidth(150.0f);
 		ImGui::Text("Teleport:");
-		ImGui::SearchableCombo("will TP", &currentTPItem, itemsToSearch, "No entities", "type to search");
+		if (ImGui::SearchableCombo("will TP", &choiceSelection, itemsToSearch, "No entities", "type to search"))
+		{
+			cvarManager->getCvar(SELECTION).setValue(choiceSelection);
+		}
 		ImGui::SameLine();
 		if (ImGui::Button("to"))
 		{
@@ -53,30 +56,7 @@ void TPManager::RenderInfo()
 			// entities and not this custom location. 
 			//
 			// one can refer to TPManager.cpp line 142 to see why
-			if (destTPitem == 0) {
-				positionInfo customLocation = {
-					NULL,
-					std::string("Custom Location"),
-					Vector(customDestX, customDestY, customDestZ), 
-					NULL,
-					NULL,
-					NULL
-				};
-				teleportSelectionToEntity(currentTPItem, customLocation);
-			}
-			else
-			{
-				int destChoice = destTPitem - 1;
-				teleportSelectionToEntity(currentTPItem, info[destChoice]);
-			}
-		}
-		ImGui::SameLine();
-		if (ImGui::Button("above"))
-		{
-			// I didn't think ahead and I wanted this to appear first
-			// so this is me circumventing the fact that my array only holds
-			// entities and not this custom location. 
-			if (destTPitem == 0) {
+			if (choiceDestination == 0) {
 				positionInfo customLocation = {
 					NULL,
 					std::string("Custom Location"),
@@ -85,16 +65,42 @@ void TPManager::RenderInfo()
 					NULL,
 					NULL
 				};
-				teleportSelectionToEntity(currentTPItem, customLocation);
+				teleportSelectionToEntity(choiceSelection, customLocation);
 			}
 			else
 			{
-				int destChoice = destTPitem - 1;
-				teleportSelectionToEntity(currentTPItem, info[destChoice], true);
+				int destChoice = choiceDestination - 1;
+				teleportSelectionToEntity(choiceSelection, info[destChoice]);
 			}
 		}
 		ImGui::SameLine();
-		ImGui::SearchableCombo("\0", &destTPitem, destToSearch, "No entities", "type to search");
+		if (ImGui::Button("above"))
+		{
+			// I didn't think ahead and I wanted this to appear first
+			// so this is me circumventing the fact that my array only holds
+			// entities and not this custom location. 
+			if (choiceDestination == 0) {
+				positionInfo customLocation = {
+					NULL,
+					std::string("Custom Location"),
+					Vector(customDestX, customDestY, customDestZ),
+					NULL,
+					NULL,
+					NULL
+				};
+				teleportSelectionToEntity(choiceSelection, customLocation);
+			}
+			else
+			{
+				int destChoice = choiceDestination - 1;
+				teleportSelectionToEntity(choiceSelection, info[destChoice], true);
+			}
+		}
+		ImGui::SameLine();
+		if (ImGui::SearchableCombo("\0", &choiceDestination, destToSearch, "No entities", "type to search"))
+		{
+			cvarManager->getCvar(DESTINATION).setValue(choiceDestination);
+		}
 		if (ImGui::TreeNode("Custom location:"))
 		{
 			ImGui::BeginGroup();

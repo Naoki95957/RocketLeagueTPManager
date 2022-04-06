@@ -10,6 +10,8 @@ void TPManager::onLoad()
 	_globalCvarManager = cvarManager;
 	pollForInfo = true;
 
+	cvarManager->registerCvar(SELECTION, "0");
+	cvarManager->registerCvar(DESTINATION, "0");
 	cvarManager->registerNotifier("get_tpinfo", [this](std::vector<std::string> args) {
 		std::vector<positionInfo> info = getPositionInfo();
 		cvarManager->log("Entities: " + std::to_string(info.size()));
@@ -32,6 +34,8 @@ void TPManager::onUnload()
 	pollForInfo = false;
 	finishedPolling.lock();
 	finishedPolling.unlock();
+	cvarManager->removeCvar(SELECTION);
+	cvarManager->removeCvar(DESTINATION);
 }
 
 void TPManager::getContinousInfo() 
@@ -42,6 +46,14 @@ void TPManager::getContinousInfo()
 		try
 		{
 			positionalInfoAllEntities = pollPositionInfo();
+			if (positionalInfoAllEntities.size() != totalNumEntities)
+			{
+				cvarManager->getCvar(SELECTION).setValue(0);
+				cvarManager->getCvar(DESTINATION).setValue(0);
+			}
+			choiceSelection = cvarManager->getCvar(SELECTION).getIntValue();
+			choiceDestination = cvarManager->getCvar(DESTINATION).getIntValue();
+			totalNumEntities = positionalInfoAllEntities.size();
 		}
 		catch (const std::exception&)
 		{
