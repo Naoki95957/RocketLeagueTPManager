@@ -131,6 +131,39 @@ void TPManager::teleportSelectionToEntity(int selection, positionInfo entity, bo
 		}
 	}
 }
+/// Shamelessly coppied off rocket-plugin
+/// <summary>Gets the players in the current game.</summary>
+ /// <param name="includeBots">Bool with if the output should include bots</param>
+ /// <param name="mustBeAlive">Bool with if the output should only include alive players</param>
+ /// <returns>List of players</returns>
+std::vector<PriWrapper> TPManager::getPlayers(const bool includeBots, const bool mustBeAlive)
+{
+	std::vector<PriWrapper> players;
+	ServerWrapper game = gameWrapper.get()->GetCurrentGameState();
+	if (game.IsNull()) {
+		return players;
+	}
+
+	if (mustBeAlive) {
+		for (CarWrapper car : game.GetCars()) {
+			if (car.IsNull() || car.GetPRI().IsNull() || (!includeBots && car.GetPRI().GetbBot())) {
+				continue;
+			}
+
+			players.push_back(car.GetPRI());
+		}
+	}
+	else {
+		for (PriWrapper PRI : game.GetPRIs()) {
+			if (PRI.IsNull() || (!includeBots && PRI.GetbBot())) {
+				continue;
+			}
+			players.push_back(PRI);
+		}
+	}
+
+	return players;
+}
 
 std::vector<positionInfo> TPManager::pollPositionInfo()
 {
@@ -176,24 +209,19 @@ std::vector<positionInfo> TPManager::pollPositionInfo()
 	}
 	
 	// per car
-	ArrayWrapper cars = gameState.GetCars();
-	std::vector<CarWrapper> carVector = std::vector<CarWrapper>();
-	for (auto car : cars) {
-		carVector.push_back(car);
-	}
-
-	if (!carVector.empty())
+	std::vector<PriWrapper> cars = getPlayers(true);
+	if (!cars.empty())
 	{
-		std::sort(carVector.begin(), carVector.end(), [](CarWrapper& a, CarWrapper& b) -> bool
+		std::sort(cars.begin(), cars.end(), [](PriWrapper& a, PriWrapper& b) -> bool
 			{
-				return a.GetOwnerName() < b.GetOwnerName();
+				return a.GetPlayerName().ToString() < b.GetPlayerName().ToString();
 			});
 
-		for (int i = 0; i < carVector.size(); ++i)
+		for (int i = 0; i < cars.size(); ++i)
 		{
-			auto car = carVector[i];
+			auto car = cars[i];
 			// Since there currently exists a bug grabbing player names...
-			std::string name = car.GetOwnerName();
+			std::string name = car.GetPlayerName().ToString();
 			if (name.size() < 1)
 			{
 				name = "Player " + std::to_string(i);
@@ -201,12 +229,12 @@ std::vector<positionInfo> TPManager::pollPositionInfo()
 			itemsToSearch.push_back(name);
 			destToSearch.push_back(name);
 			allEntities.push_back({
-				car,
+				car.GetCar(),
 				name,
-				car.GetLocation(),
-				car.GetRotation(),
-				car.GetVelocity(),
-				car.GetAngularVelocity()
+				car.GetCar().GetLocation(),
+				car.GetCar().GetRotation(),
+				car.GetCar().GetVelocity(),
+				car.GetCar().GetAngularVelocity()
 			});
 		}
 	}

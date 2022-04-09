@@ -68,6 +68,8 @@ public:
 	void setPositionInfo(positionInfo info, updatePositionType updateField = updatePositionType::UPDATE_ALL);
 	void teleportSelectionToEntity(int selection, positionInfo entity, bool above = false);
 
+	std::vector<PriWrapper> getPlayers(const bool includeBots = false, const bool mustBeAlive = false);
+
 	//// Inherited via PluginSettingsWindow
 	void RenderSettings() override;
 	std::string GetPluginName() override;
