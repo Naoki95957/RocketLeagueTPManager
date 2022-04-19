@@ -40,13 +40,15 @@ void TPManager::RenderInfo()
 
 	//render/modify stuff
 	std::vector<positionInfo> info = getPositionInfo();
-	if (info.size())
+	auto selection = cvarManager->getCvar(SELECTION);
+	auto destination = cvarManager->getCvar(DESTINATION);
+	if (info.size() && !selection.IsNull() && !destination.IsNull())
 	{
 		ImGui::PushItemWidth(150.0f);
 		ImGui::Text("Teleport:");
 		if (ImGui::SearchableCombo("will TP", &choiceSelection, itemsToSearch, "No entities", "type to search"))
 		{
-			cvarManager->getCvar(SELECTION).setValue(choiceSelection);
+			selection.setValue(choiceSelection);
 		}
 		ImGui::SameLine();
 		if (ImGui::Button("to"))
@@ -99,7 +101,7 @@ void TPManager::RenderInfo()
 		ImGui::SameLine();
 		if (ImGui::SearchableCombo("\0", &choiceDestination, destToSearch, "No entities", "type to search"))
 		{
-			cvarManager->getCvar(DESTINATION).setValue(choiceDestination);
+			destination.setValue(choiceDestination);
 		}
 		if (ImGui::TreeNode("Custom location:"))
 		{

@@ -46,18 +46,24 @@ void TPManager::getContinousInfo()
 		try
 		{
 			positionalInfoAllEntities = pollPositionInfo();
+			auto selection = cvarManager->getCvar(SELECTION);
+			auto destination = cvarManager->getCvar(DESTINATION);
+			if (selection.IsNull() || destination.IsNull()) {
+				pollingMutex.unlock();
+				continue;
+			}
 			if (positionalInfoAllEntities.size() != totalNumEntities)
 			{
-				cvarManager->getCvar(SELECTION).setValue(0);
-				cvarManager->getCvar(DESTINATION).setValue(0);
+				selection.setValue(0);
+				destination.setValue(0);
 			}
-			choiceSelection = cvarManager->getCvar(SELECTION).getIntValue();
-			choiceDestination = cvarManager->getCvar(DESTINATION).getIntValue();
+			choiceSelection = selection.getIntValue();
+			choiceDestination = destination.getIntValue();
 			totalNumEntities = positionalInfoAllEntities.size();
 		}
-		catch (const std::exception&)
+		catch (const std::exception& ex)
 		{
-			positionalInfoAllEntities = std::vector<positionInfo>();
+			//positionalInfoAllEntities = std::vector<positionInfo>();
 		}
 		pollingMutex.unlock();
 		if (pollingRateMiliseconds < 5)
@@ -173,6 +179,10 @@ std::vector<positionInfo> TPManager::pollPositionInfo()
 	}
 
 	ServerWrapper gameState = gameWrapper.get()->GetCurrentGameState();
+	if (gameState.IsNull())
+	{
+		return std::vector<positionInfo>();
+	}
 
 	// This is how I'm forcing special options used in the GUI
 
@@ -190,6 +200,10 @@ std::vector<positionInfo> TPManager::pollPositionInfo()
 
 	// per ball
 	ArrayWrapper<BallWrapper> balls = gameState.GetGameBalls();
+	if (balls.IsNull()) 
+	{
+		return std::vector<positionInfo>();
+	}
 	if (balls.Count() > 0) {
 		for (int i = 0; i < balls.Count(); ++i)
 		{
@@ -209,6 +223,10 @@ std::vector<positionInfo> TPManager::pollPositionInfo()
 	}
 	
 	// per car
+	if (gameState.GetCars().IsNull() || gameState.GetPRIs().IsNull())
+	{
+		return std::vector<positionInfo>();
+	}
 	std::vector<PriWrapper> cars = getPlayers(true);
 	if (!cars.empty())
 	{
