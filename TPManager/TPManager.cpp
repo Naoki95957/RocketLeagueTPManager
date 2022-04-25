@@ -82,7 +82,7 @@ void TPManager::teleportSelectionToEntity(int selection, positionInfo entity, bo
 	// 0 = All entities
 	// 1 = All players
 	// 2 = All balls
-	// 3+ -> entity list in positionalInfo array
+	// 3+ -> entity listed in positionalInfo array
 	if (selection == 0) {
 		for (int i = 0; i < positionalInfoAllEntities.size(); ++i)
 		{
@@ -187,7 +187,7 @@ std::vector<positionInfo> TPManager::pollPositionInfo()
 	// This is how I'm forcing special options used in the GUI
 
 	//list containing all moving objects
-	//+ a few specail options
+	//+ a few special options
 	std::vector<positionInfo> allEntities = std::vector<positionInfo>();
 	itemsToSearch = std::vector<std::string>();
 	itemsToSearch.push_back("All entities");
