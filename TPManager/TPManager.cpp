@@ -150,18 +150,23 @@ std::vector<PriWrapper> TPManager::getPlayers(const bool includeBots, const bool
 		return players;
 	}
 
-	if (mustBeAlive) {
-		for (CarWrapper car : game.GetCars()) {
-			if (car.IsNull() || car.GetPRI().IsNull() || (!includeBots && car.GetPRI().GetbBot())) {
+	if (mustBeAlive) 
+	{
+		for (CarWrapper car : game.GetCars()) 
+		{
+			if (car.IsNull() || car.GetPRI().IsNull() || (!includeBots && car.GetPRI().GetbBot())) 
+			{
 				continue;
 			}
-
 			players.push_back(car.GetPRI());
 		}
 	}
-	else {
-		for (PriWrapper PRI : game.GetPRIs()) {
-			if (PRI.IsNull() || (!includeBots && PRI.GetbBot())) {
+	else 
+	{
+		for (PriWrapper PRI : game.GetPRIs()) 
+		{
+			if (PRI.IsNull() || (!includeBots && PRI.GetbBot())) 
+			{
 				continue;
 			}
 			players.push_back(PRI);
@@ -227,7 +232,7 @@ std::vector<positionInfo> TPManager::pollPositionInfo()
 	{
 		return std::vector<positionInfo>();
 	}
-	std::vector<PriWrapper> cars = getPlayers(true);
+	std::vector<PriWrapper> cars = getPlayers(true, true);
 	if (!cars.empty())
 	{
 		std::sort(cars.begin(), cars.end(), [](PriWrapper& a, PriWrapper& b) -> bool
@@ -238,7 +243,6 @@ std::vector<positionInfo> TPManager::pollPositionInfo()
 		for (int i = 0; i < cars.size(); ++i)
 		{
 			auto car = cars[i];
-			// Since there currently exists a bug grabbing player names...
 			std::string name = car.GetPlayerName().ToString();
 			if (name.size() < 1)
 			{
