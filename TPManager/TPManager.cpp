@@ -9,9 +9,6 @@ void TPManager::onLoad()
 {
 	_globalCvarManager = cvarManager;
 	pollForInfo = true;
-
-	cvarManager->registerCvar(SELECTION, "0");
-	cvarManager->registerCvar(DESTINATION, "0");
 	cvarManager->registerNotifier("get_tpinfo", [this](std::vector<std::string> args) {
 		std::vector<positionInfo> info = getPositionInfo();
 		cvarManager->log("Entities: " + std::to_string(info.size()));
@@ -25,7 +22,6 @@ void TPManager::onLoad()
 			cvarManager->log("AngVel: x:" + std::to_string(info[i].angVelocity.X) + " y:" + std::to_string(info[i].angVelocity.Y) + " z:" + std::to_string(info[i].angVelocity.Z));
 		}
 		}, "", 0);
-
 	getContinousInfo();
 }
 
@@ -34,8 +30,6 @@ void TPManager::onUnload()
 	pollForInfo = false;
 	finishedPolling.lock();
 	finishedPolling.unlock();
-	cvarManager->removeCvar(SELECTION);
-	cvarManager->removeCvar(DESTINATION);
 }
 
 void TPManager::getContinousInfo() 
@@ -46,19 +40,6 @@ void TPManager::getContinousInfo()
 		try
 		{
 			positionalInfoAllEntities = pollPositionInfo();
-			auto selection = cvarManager->getCvar(SELECTION);
-			auto destination = cvarManager->getCvar(DESTINATION);
-			if (selection.IsNull() || destination.IsNull()) {
-				pollingMutex.unlock();
-				continue;
-			}
-			if (positionalInfoAllEntities.size() != totalNumEntities)
-			{
-				selection.setValue(0);
-				destination.setValue(0);
-			}
-			choiceSelection = selection.getIntValue();
-			choiceDestination = destination.getIntValue();
 			totalNumEntities = positionalInfoAllEntities.size();
 		}
 		catch (const std::exception& ex)
@@ -190,7 +171,6 @@ std::vector<positionInfo> TPManager::pollPositionInfo()
 	}
 
 	// This is how I'm forcing special options used in the GUI
-
 	//list containing all moving objects
 	//+ a few special options
 	std::vector<positionInfo> allEntities = std::vector<positionInfo>();

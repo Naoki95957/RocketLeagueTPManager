@@ -40,16 +40,12 @@ void TPManager::RenderInfo()
 
 	//render/modify stuff
 	std::vector<positionInfo> info = getPositionInfo();
-	auto selection = cvarManager->getCvar(SELECTION);
-	auto destination = cvarManager->getCvar(DESTINATION);
-	if (info.size() && !selection.IsNull() && !destination.IsNull())
+	if (info.size())
 	{
 		ImGui::PushItemWidth(150.0f);
 		ImGui::Text("Teleport:");
-		if (ImGui::SearchableCombo("will TP", &choiceSelection, itemsToSearch, "No entities", "type to search"))
-		{
-			selection.setValue(choiceSelection);
-		}
+		pollingMutex.lock();
+		ImGui::SearchableCombo("will TP", &choiceSelection, itemsToSearch, "No entities", "type to search");
 		ImGui::SameLine();
 		if (ImGui::Button("to"))
 		{
@@ -57,7 +53,7 @@ void TPManager::RenderInfo()
 			// so this is me circumventing the fact that my array only holds
 			// entities and not this custom location. 
 			//
-			// one can refer to TPManager.cpp line 142 to see why
+			// one can refer to TPManager.cpp line 175 to see why
 			if (choiceDestination == 0) {
 				positionInfo customLocation = {
 					NULL,
@@ -99,10 +95,8 @@ void TPManager::RenderInfo()
 			}
 		}
 		ImGui::SameLine();
-		if (ImGui::SearchableCombo("\0", &choiceDestination, destToSearch, "No entities", "type to search"))
-		{
-			destination.setValue(choiceDestination);
-		}
+		ImGui::SearchableCombo("\0", &choiceDestination, destToSearch, "No entities", "type to search");
+		pollingMutex.unlock();
 		if (ImGui::TreeNode("Custom location:"))
 		{
 			ImGui::BeginGroup();

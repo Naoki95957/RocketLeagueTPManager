@@ -40,11 +40,6 @@ private:
 	int totalNumEntities = 0;
 	int numBalls = 0;
 
-	const char* SELECTION = "selection_tpmanager";
-	const char* DESTINATION = "destination_tpmanager";
-	int choiceSelection = 0;
-	int choiceDestination = 0;
-
 	float customDestX = 0.0f, customDestY = 0.0f, customDestZ = 0.0f;
 
 	void getContinousInfo();
@@ -58,6 +53,8 @@ private:
 
 public:
 	int pollingRateMiliseconds = 250;
+	int choiceSelection = 0;
+	int choiceDestination = 0;
 	//std::shared_ptr<bool> enabled;
 
 	//Boilerplate

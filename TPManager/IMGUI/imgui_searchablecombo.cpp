@@ -162,8 +162,6 @@ bool ImGui::SearchableCombo(const char* label, int* current_item, std::vector<st
     ImGuiContext& g = *GImGui;
 
     const char* preview_text = NULL;
-    if (*current_item >= (int)items.size())
-        *current_item = 0;
     if (*current_item >= 0 && *current_item < (int)items.size())
         preview_text = items[*current_item].c_str();
     else
@@ -201,7 +199,7 @@ bool ImGui::SearchableCombo(const char* label, int* current_item, std::vector<st
         PushID((void*)(intptr_t)i);
         const bool item_selected = (i == *current_item);
         const char* item_text = items[i].c_str();
-        if (Selectable(item_text, item_selected))
+        if (Selectable(item_text, item_selected, ImGuiSelectableFlags_PressedOnClick))
         {
             value_changed = true;
             *current_item = i;
